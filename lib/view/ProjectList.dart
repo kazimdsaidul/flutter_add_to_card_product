@@ -1,5 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_add_to_card_product/bloc/cart_bloc.dart';
+import 'package:flutter_add_to_card_product/model/product.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:developer';
 
 import '../dummy_product_list.dart';
 
@@ -14,6 +20,12 @@ class ProjectList extends StatefulWidget {
 
 class _ProjectListState extends State<ProjectList> {
   @override
+  void initState() {
+    super.initState();
+    BlocProvider.of<CardBloc>(context).add(PageLoad());
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.title), actions: <Widget>[
@@ -23,42 +35,74 @@ class _ProjectListState extends State<ProjectList> {
               icon: Icon(Icons.shopping_basket),
               onPressed: () {},
             ),
-            Positioned(
-              right: 18,
-              top: 4,
-              child: Text("0"),
-            )
+            BlocBuilder<CardBloc, CardState>(builder: (context, cartState) {
+              if (cartState is CardOperationSuccess &&
+                  cartState.cardItem.length > 0) {
+                return Positioned(
+                  right: 18,
+                  top: 4,
+                  child: Text("${cartState.cardItem.length}"),
+                );
+              } else if (cartState is CardLoading) {
+                return Center(
+                  child: Container(
+                    child: Text("Loading...."),
+                  ),
+                );
+              } else {
+                return Positioned(right: 18, top: 4, child: Text(""));
+              }
+            })
           ],
         )
       ]),
-      body: ListView.builder(
-          itemCount: DummyProductList.products.length,
-          itemBuilder: (context, index) {
-            final product = DummyProductList.products[index];
-            return ListTile(
-              leading: Container(
-                height: 50,
-                width: 50,
-                child: CircleAvatar(
-                  radius: double.infinity,
-                  backgroundImage: NetworkImage(product.image),
-                ),
-              ),
-              title: Text(product.name),
-              subtitle: Text("\$${product.price}"),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.add),
+      body: BlocBuilder<CardBloc, CardState>(builder: (context, cartState) {
+        if (cartState is ProjectAdded) {
+          var listProject = cartState.listProduct;
+          return ListView.builder(
+              itemCount: listProject.length,
+              itemBuilder: (context, index) {
+                var product = listProject[index];
+                return ListTile(
+                  leading: Container(
+                    height: 50,
+                    width: 50,
+                    child: CircleAvatar(
+                      radius: double.infinity,
+                      backgroundImage: NetworkImage(product.image),
+                    ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.remove),
+                  title: Text(product.name),
+                  subtitle: Text("\$${product.price}"),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      IconButton(
+                        icon: Icon(Icons.add),
+                        onPressed: () {
+                          BlocProvider.of<CardBloc>(context)
+                              .add(AddToCard(product));
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.remove),
+                        onPressed: () {
+                          BlocProvider.of(context)
+                              .emit(RemoveFromCard(product));
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }),
+                );
+              });
+        } else {
+          return Center(
+            child: Container(
+              child: Text("No product found"),
+            ),
+          );
+        }
+      }),
     );
   }
 
@@ -91,6 +135,48 @@ class _ProjectListState extends State<ProjectList> {
       padding: EdgeInsets.all(25.0),
       primary: true,
       scrollDirection: Axis.vertical,
+    );
+  }
+}
+
+class DefalutProductList extends StatelessWidget {
+  const DefalutProductList({
+    Key key,
+    @required this.product,
+  }) : super(key: key);
+
+  final Product product;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        height: 50,
+        width: 50,
+        child: CircleAvatar(
+          radius: double.infinity,
+          backgroundImage: NetworkImage(product.image),
+        ),
+      ),
+      title: Text(product.name),
+      subtitle: Text("\$${product.price}"),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () {
+              BlocProvider.of<CardBloc>(context).add(AddToCard(product));
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.remove),
+            onPressed: () {
+              BlocProvider.of(context).emit(RemoveFromCard(product));
+            },
+          ),
+        ],
+      ),
     );
   }
 }

@@ -5,20 +5,22 @@ import 'package:flutter_add_to_card_product/model/CardItem.dart';
 import 'package:flutter_add_to_card_product/model/product.dart';
 import 'package:meta/meta.dart';
 
+import '../dummy_product_list.dart';
+
 part 'cart_event.dart';
 
 part 'cart_state.dart';
 
-class CartBloc extends Bloc<CartEvent, CartState> {
+class CardBloc extends Bloc<CartEvent, CardState> {
   List<CartItem> _cartItem = List.unmodifiable([]);
 
-  CartBloc() : super(CartInitial());
+  CardBloc() : super(CartInitial());
 
   @override
-  Stream<CartState> mapEventToState(
+  Stream<CardState> mapEventToState(
     CartEvent event,
   ) async* {
-    if (event is AddToCar) {
+    if (event is AddToCard) {
       yield CardLoading();
       await Future.delayed(Duration(seconds: 3));
       List<CartItem> tempList = List<CartItem>.from(_cartItem);
@@ -40,9 +42,17 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       }
       _cartItem = List.unmodifiable(tempList);
       yield CardOperationSuccess(_cartItem);
-    } else if (event is CardOperationSuccess) {
-    } else if (event is CardOperationFail) {
-    } else if (event is CardLoading) {
-    } else if (event is CartInitial) {}
+    } else if (event is PageLoad) {
+      final list = DummyProductList.products;
+      yield ProjectAdded(list);
+
+      await Future.delayed(Duration(seconds: 10));
+
+      final list2 = DummyProductList.Newproducts;
+      list.addAll(list2);
+      list.addAll(list2);
+      list.addAll(list2);
+      yield ProjectAdded(list);
+    }
   }
 }
